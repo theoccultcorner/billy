@@ -11,7 +11,7 @@ export default function Home() {
   async function onSubmit(event) {
     event.preventDefault();
     try {
-      const response = await fetch("/api/generate", {
+      const response = await fetch("https://lorenzo.onrender.com", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

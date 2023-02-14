@@ -58,7 +58,7 @@ function speak(text) {
   let utterance = new SpeechSynthesisUtterance(text);
   let voicesArray = speechSynthesis.getVoices();
   console.log(voicesArray);
-  utterance.voice = voicesArray[106];
+  utterance.voice = voicesArray[109];
   utterance.pitch = 1.0;
   utterance.volume = 0.9;
   utterance.rate = 1.1;

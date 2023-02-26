@@ -101,8 +101,8 @@ export default function Home() {
       </form>
       
       <label>
-        Select a voice:
-        <select id="voiceSelect" onChange={handleVoiceSelect}>
+        
+        <select className={styles.button} id="voiceSelect" onChange={handleVoiceSelect}>
           {/* Voice options will be populated dynamically */}
         </select>
       </label>

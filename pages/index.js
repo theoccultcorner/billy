@@ -1,22 +1,24 @@
- 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import styles from "./index.module.css";
-import React from 'react';
 
 export default function Home() {
-  const [question, setQuestion] = useState("");
-  const [result, setResult] = useState();
- 
+  const [input, setInput] = useState("");
+  const [result, setResult] = useState("");
+  const [selectedVoice, setSelectedVoice] = useState(null);
+
+  useEffect(() => {
+    loadDefaultVoice();
+  }, []);
 
   async function onSubmit(event) {
     event.preventDefault();
     try {
-      const response = await fetch("https://lorenzo.onrender.com", {
+      const response = await fetch("/api/generate", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ question: question }),
+        body: JSON.stringify({ prompt: input }),
       });
 
       const data = await response.json();
@@ -25,42 +27,85 @@ export default function Home() {
       }
 
       setResult(data.result);
-      setQuestion("");
-      speak(data.result);
-    } catch(error) {
-      // Consider implementing your own error handling logic here
+      setInput("");
+      speak(data.result);  
+    } catch (error) {
+      
       console.error(error);
       alert(error.message);
     }
   }
 
+  function speak(text) {
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.voice = selectedVoice;
+    speechSynthesis.speak(utterance);
+  }
+
+  function loadDefaultVoice() {
+    // Get the 109th voice and use it as the default voice
+    const voices = window.speechSynthesis.getVoices();
+    const defaultVoice = voices[109]; // 109th voice
+    setSelectedVoice(defaultVoice);
+  }
+
+  function populateVoiceList() {
+    if (typeof speechSynthesis === "undefined") {
+      return;
+    }
+
+    const voices = speechSynthesis.getVoices();
+    const voiceSelect = document.getElementById("voiceSelect");
+    voiceSelect.innerHTML = "";
+
+    for (let i = 0; i < voices.length; i++) {
+      const option = document.createElement("option");
+      option.textContent = `${voices[i].name} (${voices[i].lang})`;
+
+      if (voices[i].default) {
+        option.textContent += " — DEFAULT";
+      }
+
+      option.setAttribute("data-lang", voices[i].lang);
+      option.setAttribute("data-name", voices[i].name);
+      option.setAttribute("value", i);
+      voiceSelect.appendChild(option);
+    }
+
+    setSelectedVoice(voices[109]); // Set the default voice
+  }
+
+  useEffect(() => {
+    populateVoiceList();
+    if (typeof speechSynthesis !== "undefined" && speechSynthesis.onvoiceschanged !== undefined) {
+      speechSynthesis.onvoiceschanged = populateVoiceList;
+    }
+  }, []);
+
+  function handleVoiceSelect(event) {
+    const voiceIndex = event.target.value;
+    const voices = window.speechSynthesis.getVoices();
+    const selected = voices[voiceIndex];
+    setSelectedVoice(selected);
+  }
+
   return (
-    <div>
-      <main className={styles.main}>
-        <form onSubmit={onSubmit}>
-          <input
-            type="text"
-            name="question"
-            placeholder="Enter your question"
-            value={question}
-            onChange={(e) => setQuestion(e.target.value)}
-          />
-          <input type="submit" value="Get answer" />
-        </form>
-        <div className={styles.result}>{result}</div>
-   
-      </main>
+    <div className={styles.main}>
+       <p>Billy:</p><div className={styles.result}>{result}</div>
+      <form onSubmit={onSubmit}>
+        <label>
+        
+          <input type="text" value={input} onChange={(e) => setInput(e.target.value)} />
+        </label>
+        <input className={styles.button} type="submit" value="Send" />
+      </form>
+      
+      <label>
+        Select a voice:
+        <select id="voiceSelect" onChange={handleVoiceSelect}>
+          {/* Voice options will be populated dynamically */}
+        </select>
+      </label>
     </div>
   );
-}
-
-function speak(text) {
-  let utterance = new SpeechSynthesisUtterance(text);
-  let voicesArray = speechSynthesis.getVoices();
-  console.log(voicesArray);
-  utterance.voice = voicesArray[109];
-  utterance.pitch = 1.0;
-  utterance.volume = 0.9;
-  utterance.rate = 1.1;
-  speechSynthesis.speak(utterance);
 }

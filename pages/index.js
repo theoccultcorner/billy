@@ -28,9 +28,8 @@ export default function Home() {
 
       setResult(data.result);
       setInput("");
-      speak(data.result);  
+      speak(data.result);
     } catch (error) {
-      
       console.error(error);
       alert(error.message);
     }
@@ -39,22 +38,17 @@ export default function Home() {
   function speak(text) {
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.voice = selectedVoice;
-    speechSynthesis.speak(utterance);
+    window.speechSynthesis.speak(utterance);
   }
 
   function loadDefaultVoice() {
-    // Get the 109th voice and use it as the default voice
     const voices = window.speechSynthesis.getVoices();
-    const defaultVoice = voices[109]; // 109th voice
+    const defaultVoice = voices[0];
     setSelectedVoice(defaultVoice);
   }
 
   function populateVoiceList() {
-    if (typeof speechSynthesis === "undefined") {
-      return;
-    }
-
-    const voices = speechSynthesis.getVoices();
+    const voices = window.speechSynthesis.getVoices();
     const voiceSelect = document.getElementById("voiceSelect");
     voiceSelect.innerHTML = "";
 
@@ -72,13 +66,13 @@ export default function Home() {
       voiceSelect.appendChild(option);
     }
 
-    setSelectedVoice(voices[109]); // Set the default voice
+    setSelectedVoice(voices[0]);
   }
 
   useEffect(() => {
     populateVoiceList();
-    if (typeof speechSynthesis !== "undefined" && speechSynthesis.onvoiceschanged !== undefined) {
-      speechSynthesis.onvoiceschanged = populateVoiceList;
+    if (typeof window.speechSynthesis !== "undefined" && window.speechSynthesis.onvoiceschanged !== undefined) {
+      window.speechSynthesis.onvoiceschanged = populateVoiceList;
     }
   }, []);
 
@@ -89,23 +83,36 @@ export default function Home() {
     setSelectedVoice(selected);
   }
 
+  function handleMicClick() {
+    const recognition = new webkitSpeechRecognition();
+    recognition.lang = "en-US";
+
+    recognition.onresult = function (event) {
+      const resultIndex = event.resultIndex;
+      const transcript = event.results[resultIndex][0].transcript;
+      setInput(transcript);
+    };
+
+    recognition.start();
+  }
+
   return (
-    <div className={styles.main}>
-       <p>Billy:</p><div className={styles.result}>{result}</div>
+    <div className={styles.container}>
       <form onSubmit={onSubmit}>
-        <label>
-        
-          <input type="text" value={input} onChange={(e) => setInput(e.target.value)} />
-        </label>
-        <input className={styles.button} type="submit" value="Send" />
+        <textarea
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Enter a writing prompt..."
+        />
+        <button type="submit">Generate</button>
       </form>
-      
-      <label>
-        
-        <select className={styles.button} id="voiceSelect" onChange={handleVoiceSelect}>
-          {/* Voice options will be populated dynamically */}
+
+      <div className={styles.output}>
+        {result && <p>{result}</p>}
+        <select id="voiceSelect" onChange={handleVoiceSelect}>
         </select>
-      </label>
+        <button onClick={handleMicClick}>Speak</button>
+      </div>
     </div>
   );
 }
